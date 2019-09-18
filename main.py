@@ -1,40 +1,38 @@
 #!/usr/bin/python
-"""Webserver via Flask to test the webserver"""
+# Based on https://pythonspot.com/login-authentication-with-flask/ and adjusted
+"""Webserver via Flask for testing purpose"""
 
-from flask import Flask, redirect, url_for, request, render_template
+from flask import Flask, flash, redirect, render_template, request, session, abort
+import os
 
-app = Flask(__name__)
-
-
-@app.route('/success/<name>')
-def success(name):
-    return 'welcome %s' % name
+APP = Flask(__name__)
 
 
-@app.route('/login', methods=['POST', 'GET'])
-def login():
-    if request.method == 'POST':
-        user = request.form['nm']
-        return redirect(url_for('success', name = user))
-    else:
-        user = request.args.get('nm')
-        return redirect(url_for('success', name = user))
-
-
-@app.route('/')
+@APP.route('/')
 def home():
-    return render_template("login.html")
+    if not session.get('logged_in'):
+        return render_template('login_test.html')
+    else:
+        return "Hello Boss! <a href='/logout'>Logout</a>"
 
 
-@app.route('/hello')
-def hello():
-    return render_template('hello.html')
+@APP.route('/login', methods=['POST'])
+def do_admin_login():
+    if request.form['password'] == 'password' and request.form['username'] == 'admin':
+        session['logged_in'] = True
+        return home()
+        # return render_template('login_test.html')
+    else:
+        flash('wrong password!')
+        return home()
 
 
-@app.route('/hello/<name>')
-def hello_name(name):
-    return render_template('hello.html', name = user)
+@APP.route('/logout')
+def logout():
+    session['logged_in'] = False
+    return home()
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    APP.secret_key = os.urandom(12)
+    APP.run(debug=True, host='127.0.0.1', port=5000)
